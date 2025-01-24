@@ -1,23 +1,29 @@
 package comptoirs.dao;
 
 
-import comptoirs.entity.Client;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
 import java.util.List;
 import java.util.Optional;
 
-// This will be AUTO IMPLEMENTED by Spring into a Bean called ProductCodeRepository
-// CRUD refers Create, Read, Update, Delete
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import comptoirs.entity.Client;
+
+// This will be AUT IMPLEMENTED by Spring into a Bean called ProductCodeRepository
+
 
 public interface ClientRepository extends JpaRepository<Client, String> {
     /**
-     * Calcule le nombre d'articles commandés par un client
+     
      * @param clientCode la clé du client
      */
-    @Query("SELECT 0")
+    @Query("""
+        SELECT COALESCE(SUM(l.quantite), 0)
+        FROM Ligne l
+        WHERE l.commande.client.code = :clientCode
+        """)
     int nombreArticlesCommandesPar(String clientCode);
+
 
     /**
      * Recherche un client par son nom de société

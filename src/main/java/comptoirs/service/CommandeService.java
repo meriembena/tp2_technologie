@@ -5,8 +5,8 @@ import java.time.LocalDate;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import comptoirs.dao.ClientRepository;
 import comptoirs.dao.CommandeRepository;
@@ -14,7 +14,6 @@ import comptoirs.dao.LigneRepository;
 import comptoirs.dao.ProduitRepository;
 import comptoirs.entity.Commande;
 import comptoirs.entity.Ligne;
-
 import jakarta.validation.constraints.Positive;
 
 @Service
@@ -22,7 +21,7 @@ import jakarta.validation.constraints.Positive;
 // (ex: @Positive)
 public class CommandeService {
     // La couche "Service" utilise la couche "Accès aux données" pour effectuer les
-    // traitements
+    // traitement
     private final CommandeRepository commandeDao;
     private final ClientRepository clientDao;
     private final LigneRepository ligneDao;
@@ -45,9 +44,9 @@ public class CommandeService {
      * - le client doit exister
      * - On initialise l'adresse de livraison avec l'adresse du client
      * - Si le client a déjà commandé plus de 100 articles, on lui offre une remise
-     * de 15%
+     
      *
-     * @param clientCode la clé du client
+     * @param clientCode la clé du clien
      * @return la commande créée
      * @throws java.util.NoSuchElementException si le client n'existe pas
      */
@@ -91,7 +90,7 @@ public class CommandeService {
      *
      * @param commandeNum la clé de la commande
      * @param produitRef  la clé du produit
-     * @param quantite    la quantité commandée (positive)
+     * @param quantite    
      * @return la ligne de commande créée
      * @throws java.util.NoSuchElementException                si la commande ou le
      *                                                         produit n'existe pas
@@ -106,22 +105,26 @@ public class CommandeService {
      */
     @Transactional
     public Ligne ajouterLigne(int commandeNum, int produitRef, @Positive int quantite) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        var commande = commandeDao.findById(commandeNum).orElseThrow();
+        if (commande.getEnvoyeele() != null) {
+            throw new IllegalStateException("La commande a déjà été envoyée");
+        }
+        var produit = produitDao.findById(produitRef).orElseThrow();
+        if (produit.isIndisponible()) {
+            throw new IllegalStateException("Le produit est indisponible");
+        }
+        if (produit.getUnitesEnStock() < produit.getUnitesCommandees() + quantite) {
+            throw new IllegalStateException("Pas assez de stock pour cette commande");
+        }
+        var ligne = new Ligne(commande, produit, quantite);
+        ligneDao.save(ligne);
+        produit.setUnitesCommandees(produit.getUnitesCommandees() + quantite);
+        produitDao.save(produit);
+        return ligne;
     }
 
     /**
-     * Service métier : Enregistre l'expédition d'une commande connue par sa clé
-     * Règles métier :
-     * - la commande doit exister
-     * - la commande ne doit pas être déjà envoyée (le champ 'envoyeele' doit être
-     * null)
-     * - On renseigne la date d'expédition (envoyeele) avec la date du jour
-     * - Pour chaque produit dans les lignes de la commande :
-     * décrémente la quantité en stock (Produit.unitesEnStock) de la quantité dans
-     * la commande
-     * décrémente la quantité commandée (Produit.unitesCommandees) de la quantité
-     * dans la commande
+     
      *
      * @param commandeNum la clé de la commande
      * @return la commande mise à jour
@@ -130,7 +133,18 @@ public class CommandeService {
      */
     @Transactional
     public Commande enregistreExpedition(int commandeNum) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        var commande = commandeDao.findById(commandeNum).orElseThrow();
+        if (commande.getEnvoyeele() != null) {
+            throw new IllegalStateException("La commande a déjà été envoyée");
+        }
+        commande.setEnvoyeele(LocalDate.now());
+        for (var ligne : commande.getLignes()) {
+            var produit = ligne.getProduit();
+            produit.setUnitesEnStock(produit.getUnitesEnStock() - ligne.getQuantite());
+            produit.setUnitesCommandees(produit.getUnitesCommandees() - ligne.getQuantite());
+            produitDao.save(produit);
+        }
+        commandeDao.save(commande);
+        return commande;
     }
 }
