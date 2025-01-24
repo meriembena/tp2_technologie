@@ -33,7 +33,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     Optional<Client> findBySociete(String societe);
 
     /**
-     * Trouve pour un client donné le nombre de produits différents qu'il a commandé
+     
      * @param codeClient le code du client à traiter
      *             (le code est la clé primaire de l'entité Client)
      * @return le nombre de produits différents commandés par ce client

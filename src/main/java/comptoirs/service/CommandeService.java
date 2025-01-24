@@ -41,7 +41,7 @@ public class CommandeService {
      * Service métier : Enregistre une nouvelle commande pour un client connu par sa
      * clé
      * Règles métier :
-     * - le client doit exister
+     
      * - On initialise l'adresse de livraison avec l'adresse du client
      * - Si le client a déjà commandé plus de 100 articles, on lui offre une remise
      
